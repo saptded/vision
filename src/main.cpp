@@ -2,11 +2,14 @@
 
 #include "image_recognition/ImageProcessor.h"
 #include "exception/BaseException.h"
+#include "vehicle_controller/VehicleController.h"
 
 int main() {
     try {
-        vision::image::ImageProcessor image;
-        image.ProcessFromPattern("../../images/*.png");
+        vision::controller::VehicleController controller(20, 5, 50);
+        vision::image::ImageRecognizer imageRecognizer;
+//        imageRecognizer.RecognizeFromPattern("../../images/ships/*");
+        controller.Run();
     } catch (BaseException &e) {
         std::cerr << e.what() << std::endl;
     }

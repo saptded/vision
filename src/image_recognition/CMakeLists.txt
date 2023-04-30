@@ -1,2 +1,2 @@
-add_library(video STATIC VideoProcessor.cpp)
-target_link_libraries(video PUBLIC ${OpenCV_LIBS} exception)
+add_library(recognizer STATIC ImageRecognizer.cpp)
+target_link_libraries(recognizer PUBLIC ${OpenCV_LIBS} exception)

@@ -3,28 +3,17 @@
 #include <memory>
 #include <opencv2/videoio.hpp>
 
-namespace vision {
-namespace network {
-class Sender;
-}
-
-namespace image {
-class ImageProcessor {
+namespace vision::image {
+class ImageRecognizer {
  public:
-    explicit ImageProcessor();
-    void Process();
-    void ProcessFromPattern(const std::string& path);
+    explicit ImageRecognizer();
+    void RecognizeFromPattern(const std::string& path);
+    bool Recognize(const cv::Mat&);
 
- private:
-    cv::Mat processImage(const cv::Mat&);
+private:
+    bool recognize(cv::Mat &, const std::string& path);
+    cv::Mat cannyImage(const cv::Mat&);
     cv::Mat prepareImage(const cv::Mat&);
-    void filterCounters(std::vector<std::vector<cv::Point>>&);
-    cv::Mat otsu_threshold(const cv::Mat &img) const;
-    cv::Mat calculate_position(const std::vector<std::pair<cv::Point2d, cv::Point2d>> &points, int centre_x, int centre_y);
-    std::vector<cv::RotatedRect> find_ellipses(const cv::Mat &img);
-    std::vector<std::pair<cv::Point2d, cv::Point2d>> find_points(std::vector<cv::RotatedRect> &ellipses);
-    std::vector<std::vector<cv::Point2f>> convert_contours(const cv::Mat &img, const std::vector<std::vector<cv::Point>> &contours) const;
-    std::vector<std::vector<cv::Point>> check_contours(const cv::Mat &img, const std::vector<std::vector<cv::Point>> &contours) const;
+    void filterCounters(std::vector<std::vector<cv::Point>>&, cv::Mat &);
 };
-}  // namespace video
-}  // namespace vision
+}  // namespace vision::image
