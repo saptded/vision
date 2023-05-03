@@ -8,12 +8,12 @@ class ImageRecognizer {
  public:
     explicit ImageRecognizer();
     void RecognizeFromPattern(const std::string& path);
-    bool Recognize(const cv::Mat&);
+    std::vector<std::pair<cv::Point, cv::Point>> Recognize(const cv::Mat&);
 
 private:
-    bool recognize(cv::Mat &, const std::string& path);
+    std::vector<std::pair<cv::Point, cv::Point>> recognize(cv::Mat &, const std::string& path);
     cv::Mat cannyImage(const cv::Mat&);
     cv::Mat prepareImage(const cv::Mat&);
-    void filterCounters(std::vector<std::vector<cv::Point>>&, cv::Mat &);
+    std::vector<std::pair<cv::Point, cv::Point>> filterContours(std::vector<std::vector<cv::Point>>&, cv::Mat &);
 };
 }  // namespace vision::image

@@ -6,7 +6,7 @@
 
 int main() {
     try {
-        vision::controller::VehicleController controller(20, 5, 50);
+        vision::controller::VehicleController controller(20, 5, 50, 5);
         vision::image::ImageRecognizer imageRecognizer;
 //        imageRecognizer.RecognizeFromPattern("../../images/ships/*");
         controller.Run();

@@ -9,24 +9,24 @@
 namespace vision::image {
     ImageRecognizer::ImageRecognizer() = default;
 
-    void ImageRecognizer::filterCounters(std::vector<std::vector<cv::Point>> &contours, cv::Mat &frame) {
+    std::vector<std::pair<cv::Point, cv::Point>> ImageRecognizer::filterContours(std::vector<std::vector<cv::Point>> &contours, cv::Mat &frame) {
         std::vector<std::vector<cv::Point>> new_contours;
         double totalLength = 0;
         std::cout << "NEW FRAME: contours total amount: " << contours.size() << std::endl;
 
         contours.erase(std::remove_if(contours.begin(), contours.end(), [](const std::vector<cv::Point> &c) {
-                                          std::cout << "counter size " << c.size() << " ";
-                                          return c.size() > 120;
+//                                          std::cout << "counter size " << c.size() << " ";
+                                          return c.size() < 5;
                                       }
                        ),
                        contours.end());
         std::cout << std::endl;
         for (int i = 0; i < contours.size(); i++) {
             double length = cv::arcLength(contours[i], false);
-            std::cout << "counter length: " << length << " ";
+//            std::cout << "counter length: " << length << " ";
             if (length > (frame.cols + frame.rows) * 3) {
-                std::cout << std::endl << "contour killed: length: " << length << "; max: " << (frame.cols + frame.rows)
-                          << std::endl;
+//                std::cout << std::endl << "contour killed: length: " << length << "; max: " << (frame.cols + frame.rows)
+//                          << std::endl;
             } else {
                 new_contours.push_back(contours[i]);
                 totalLength += length;
@@ -37,26 +37,25 @@ namespace vision::image {
         cv::Mat cdstP;
         cvtColor(frame, cdstP, cv::COLOR_GRAY2BGR);
 
-//        std::vector<cv::Vec3f> circles;
-//        HoughCircles(frame, circles, cv::HOUGH_GRADIENT, 1,
-//                     1,
-//                     100, 30, 0, 30
-//        );
-//        std::cout << "lines size: " << circles.size() << std::endl;
-//        for (size_t i = 0; i < circles.size(); i++) {
-//            cv::Vec3i c = circles[i];
-//            cv::Point center = cv::Point(c[0], c[1]);
-//            int radius = c[2];
-//            circle(cdstP, center, radius, cv::Scalar(255, 0, 255), 3, cv::LINE_AA);
-//        }
-
         std::vector<cv::Vec4i> lines;
-        HoughLinesP(frame, lines, 1, 2 * CV_PI / 180, 60, 5, 5);
-        std::cout << "lines size: " << lines.size() << std::endl;
+        HoughLinesP(frame, lines, 1, 2 * CV_PI / 180, 20, 1, 5);
+//        std::cout << "lines size: " << lines.size() << std::endl;
+
+//        lines.erase(std::remove_if(lines.begin(), lines.end(), [](const cv::Vec4i &l) {
+//                                       int length = sqrt(pow(l[0] - l[1], 2) - pow(l[2] - l[3], 2));
+//                                       return length < 5;
+//                                   }
+//                    ),
+//                    lines.end());
+//        std::cout << "lines filtered size: " << lines.size() << std::endl;
+
+
         for (size_t i = 0; i < lines.size(); i++) {
             cv::Vec4i l = lines[i];
-            line(cdstP, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(0, 0, 255), 3, cv::LINE_AA);
+            line(cdstP, cv::Point(l[0], l[1]), cv::Point(l[2], l[3]), cv::Scalar(0, 0, 255), 1, cv::LINE_AA);
         }
+
+
         imshow("lines", cdstP);
         std::cout << totalLength << "|||" << (frame.cols + frame.rows) * 5 << std::endl;
         if (totalLength > (frame.cols + frame.rows) * 5) {
@@ -65,11 +64,21 @@ namespace vision::image {
 
         }
 
+        std::vector<std::pair<cv::Point, cv::Point>> convertedLines;
+        for (auto line: lines) {
+            std::pair<cv::Point, cv::Point> convertedLine{
+                cv::Point{line[0], line[1]},
+                cv::Point{line[2], line[3]}
+                };
+            convertedLines.push_back(convertedLine);
+        }
+
         contours = new_contours;
         std::cout << "FRAME DONE: contours total amount: " << contours.size() << std::endl;
+        return convertedLines;
     }
 
-    bool ImageRecognizer::recognize(cv::Mat &frame, const std::string &imagePath) {
+    std::vector<std::pair<cv::Point, cv::Point>> ImageRecognizer::recognize(cv::Mat &frame, const std::string &imagePath) {
         cv::Mat ROI(frame, cv::Rect(10, 10, frame.cols - 30, frame.rows - 30));
         ROI.copyTo(frame);
 
@@ -80,7 +89,6 @@ namespace vision::image {
         std::vector<std::vector<cv::Point>> contours;
 
 
-
         cv::findContours(processedImage, contours, cv::RETR_TREE, cv::CHAIN_APPROX_SIMPLE);
         cv::Mat contourImage(processedImage.size(), CV_8UC4, cv::Scalar(0, 0, 0));
         cv::Scalar colors[3];
@@ -89,19 +97,23 @@ namespace vision::image {
         colors[2] = cv::Scalar(0, 0, 255);
 
         for (size_t idx = 0; idx < contours.size(); idx++) {
-            cv::drawContours(processedImage, contours, idx, colors[0], 1.4 , cv::LINE_AA);
+            cv::drawContours(processedImage, contours, idx, colors[0], 2, cv::LINE_AA);
         }
         imshow("c1", processedImage);
 
 
-        filterCounters(contours, processedImage);
+        std::vector<std::pair<cv::Point, cv::Point>> lines = filterContours(contours, processedImage);
+        for (auto line: lines) {
+            cv::circle(preparedImage, line.first, 2, cv::Scalar(0, 128, 0), -1);
+            cv::circle(preparedImage, line.second, 2, cv::Scalar(0, 128, 0), -1);
+        }
 
         bool isInteresting = false;
         if (!contours.empty()) {
             isInteresting = true;
-            cv::circle(preparedImage, cv::Point(preparedImage.cols - 50, 20), 10, cv::Scalar(0, 128, 0), -1);
+//            cv::circle(preparedImage, cv::Point(preparedImage.cols - 50, 20), 10, cv::Scalar(0, 128, 0), -1);
         } else {
-            cv::circle(preparedImage, cv::Point(preparedImage.cols - 50, 20), 10, cv::Scalar(255, 0, 0), -1);
+//            cv::circle(preparedImage, cv::Point(preparedImage.cols - 50, 20), 10, cv::Scalar(255, 0, 0), -1);
         }
 
         for (size_t idx = 0; idx < contours.size(); idx++) {
@@ -112,14 +124,14 @@ namespace vision::image {
         }
 
         imshow("contourImage", contourImage);
-        cv::putText(preparedImage, imagePath, cv::Point(20, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5,
-                    {0, 255, 255});
+//        cv::putText(preparedImage, imagePath, cv::Point(20, 20), cv::FONT_HERSHEY_SIMPLEX, 0.5,
+//                    {0, 255, 255});
         cv::Mat concat;
         cv::hconcat(preparedImage, processedImage, concat);
         imshow("concat", concat);
 
 
-        return isInteresting;
+        return lines;
     }
 
     void ImageRecognizer::RecognizeFromPattern(const std::string &pattern) {
@@ -137,11 +149,10 @@ namespace vision::image {
         }
     }
 
-    bool ImageRecognizer::Recognize(const cv::Mat &mat) {
+    std::vector<std::pair<cv::Point, cv::Point>> ImageRecognizer::Recognize(const cv::Mat &mat) {
         cv::Mat frame = mat;
 
-        bool recognized = recognize(frame, "imagePath");
-
+        return recognize(frame, "imagePath");
     }
 
     cv::Mat ImageRecognizer::cannyImage(const cv::Mat &frame) {
