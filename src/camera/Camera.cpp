@@ -7,7 +7,7 @@ Camera::Camera(const std::string &filePath) {
 }
 
 cv::Mat Camera::GetFrame(float x, float y, int direction) {
-    float division = 13;
+    float division = 16;
     float side = float(area.cols) / division;
 
     bool collisionX = false;

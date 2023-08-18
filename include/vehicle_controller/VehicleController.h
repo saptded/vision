@@ -47,18 +47,27 @@ namespace vision::controller {
 
         Mode handleKey();
 
-        void showArea(cv::Mat area, cv::RotatedRect roi, bool isRecognized, Pipeline pipeline, Mistake mistake) const;
+        void showArea(cv::Mat area, cv::RotatedRect roi, bool isRecognized, Pipeline pipeline, Mistake mistake,
+                      bool isAutopilotOn) const;
+
+        void drawStatusCircleWithText(cv::Mat &area, cv::Point circleCenter, int radius, float fontScale, float fontThickness,
+                                      bool status, std::string text) const;
 
         Pipeline getPipeline(std::vector<std::pair<cv::Point, cv::Point>> lines);
 
         static int calculateLinesMedianAngle(const std::vector<std::pair<cv::Point, cv::Point>> &lines);
+
+        static void filterLines(std::vector<std::pair<cv::Point, cv::Point>> &lines, int lineAngle);
+
 
         static void extendLines(std::vector<std::pair<cv::Point, cv::Point>> &lines, int medianLineAngle);
 
         static Pipeline getBorderLines(const std::vector<std::pair<cv::Point, cv::Point>> &lines, int medianLineAngle);
 
         [[nodiscard]] Mistake calculateMistake(Pipeline pipeline) const;
+
         void handleAutomaticStep(Mistake mistake);
+
         void handleErrors();
 
         int direction;
@@ -83,5 +92,9 @@ namespace vision::controller {
         int automaticAngleRetries;
         int automaticCoordinateRetries;
         int automaticStepWithoutRetries;
+
+        cv::Size2f roiSize;
+
+        cv::Mat _frame;
     };
 }  // namespace vision::controller
